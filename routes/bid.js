@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Bid = require("../models/Bid");
+const upload = require("../helpers/multer")
 
 function isLoggedIn(req, res, next){
     if(req.isAuthenticated()) return next();
@@ -23,7 +24,9 @@ function checkIfOwner(req, res, next){
 
 router.get("/", isLoggedIn, (req, res) => {
     Bid.find()
+    .populate("owner", "username")
         .then(bids => {
+          console.log(bids);
             res.render("bid-list", {bids})
         })
 });
@@ -46,7 +49,11 @@ router.post("/:id/edit", isLoggedIn, checkIfOwner,(req, res) => {
         })
 });
 
-router.post("/new", isLoggedIn, (req, res) => {
+router.post("/new", isLoggedIn, upload.array("photos"), (req, res) => {
+  console.log(req.files);
+  req.body.photos = req.files.map(file=>{
+    return file.url;
+  })
     req.body.owner = req.user._id;
     Bid.create(req.body)
         .then(() => {
